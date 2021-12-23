@@ -1,66 +1,68 @@
+# Uses python3
 import sys
 import math
-from collections import namedtuple
-
-Edge = namedtuple('Edge', ['p1', 'p2', 'distance'])
 
 
-class DisjointSet:
-    def __init__(self, n):
-        self.parents = [i for i in range(n)]
-        self.ranks = [1 for i in range(n)]
+class Node:
+    def __init__(self, a, b, c):
+        self.x = a
+        self.y = b
+        self.parent = c
+        self.rank = 0
 
-    def find(self, u):
-        if self.parents[u] == u:
-            return u
 
-        r = self.find(self.parents[u])
-        self.parents[u] = r
+class Edge:
+    def __init__(self, a, b, c):
+        self.u = a
+        self.v = b
+        self.weight = c
 
-        return r
 
-    def union(self, u, v):
-        ru = self.find(u)
-        rv = self.find(v)
+def MakeSet(i, nodes, x, y):
+    nodes.append(Node(x[i], y[i], i))
 
-        if ru == rv:
-            return
 
-        if self.ranks[ru] > self.ranks[rv]:
-            self.parents[rv] = ru
+def weight(x1, y1, x2, y2):
+    return math.sqrt((x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2))
+
+
+def Find(i, nodes):
+    if (i != nodes[i].parent):
+        nodes[i].parent = Find(nodes[i].parent, nodes)
+    return nodes[i].parent
+
+
+def Union(u, v, nodes):
+    r1 = Find(u, nodes)
+    r2 = Find(v, nodes)
+    if (r1 != r2):
+        if (nodes[r1].rank > nodes[r2].rank):
+            nodes[r2].parent = r1
         else:
-            self.parents[ru] = rv
-            if self.ranks[ru] == self.ranks[rv]:
-                self.ranks[rv] += 1
+            nodes[r1].parent = r2
+            if (nodes[r1].rank == nodes[r2].rank):
+                nodes[r2].rank += 1
 
 
-def clustering(n, x, y, k):
-
-    dijoint_set = DisjointSet(n)
+def clustering(x, y, k):
+    # write your code here
+    n = len(x)
+    nodes = []
+    for i in range(n):
+        MakeSet(i, nodes, x, y)
     edges = []
     for i in range(n):
-        for j in range(n):
-            if i == j:
-                continue
-            edges.append(Edge(i, j, math.sqrt(
-                (x[i] - x[j])**2 + (y[i] - y[j])**2)))
-    edges.sort(key=lambda x: getattr(x, 'distance'))
-
-    d = 3 * 10**6
-    clusters_count = n
-    for e in edges:
-
-        if dijoint_set.find(e.p1) == dijoint_set.find(e.p2):
-            continue
-
-        if clusters_count == k and d > e.distance:
-            d = e.distance
-            continue
-
-        dijoint_set.union(e.p1, e.p2)
-        clusters_count -= 1
-
-    return d
+        for j in range(i+1, n):
+            edges.append(Edge(i, j, weight(x[i], y[i], x[j], y[j])))
+    edges = sorted(edges, key=lambda edge: edge.weight)
+    union_num = 0
+    for edge in edges:
+        if Find(edge.u, nodes) != Find(edge.v, nodes):
+            union_num += 1
+            Union(edge.u, edge.v, nodes)
+        if(union_num > n - k):
+            return edge.weight
+    return -1
 
 
 if __name__ == '__main__':
