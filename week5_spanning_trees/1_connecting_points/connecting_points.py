@@ -12,74 +12,68 @@ def euclidean_distance(x1, y1, x2, y2):
 # (uses path compression technique)
 
 
-def find(parent, i):
-    if parent[i] == i:
+def find(parent, i, maps):
+    if parent[maps[i]] == i:
         return i
-    return find(parent, parent[i])
+    return find(parent, parent[maps[i]], maps)
 
 # A function that does union of two sets of x and y
 # (uses union by rank)
 
 
-def union(parent, rank, x, y):
-    xroot = find(parent, x)
-    yroot = find(parent, y)
+def union(parent, rank, x, y, maps):
+    xroot = find(parent, x, maps)
+    yroot = find(parent, y, maps)
 
     # Attach smaller rank tree under root of
     # high rank tree (Union by Rank)
-    if rank[xroot] < rank[yroot]:
-        parent[xroot] = yroot
-    elif rank[xroot] > rank[yroot]:
-        parent[yroot] = xroot
+    if rank[maps[xroot]] < rank[maps[yroot]]:
+        parent[maps[xroot]] = yroot
+    elif rank[maps[xroot]] > rank[maps[yroot]]:
+        parent[maps[yroot]] = xroot
 
     # If ranks are same, then make one as root
     # and increment its rank by one
     else:
-        parent[yroot] = xroot
-        rank[xroot] += 1
-
-
+        parent[maps[yroot]] = xroot
+        rank[maps[xroot]] += 1
 
 
 def minimum_distance(x, y):
     result = 0
     # write your code here
-    heap = []
     V = len(x)
-
+    heap = []
     for i in range(V):
         for j in range(i+1, V):
             distance = euclidean_distance(x[i], y[i], x[j], y[j])
             heappush(heap, (distance, f"{x[i]},{y[i]}", f"{x[j]},{y[j]}"))
 
-    visited = [set([f"{x[i]},{y[i]}"]) for i in range(V)]
-    ans = []
-    c = 0
-    while heap:
-        if c == V-1:
-            break
-        distance, point1, point2 = heappop(heap)
-        for disjoint in visited:
-            if point1 in disjoint and point2 in disjoint:
-                break
+    parent = []
+    rank = []
 
-        else:
-            for i in visited:
-                if point1 in i:
-                    i.add(point2)
-                elif point2 in i:
-                    i.add(point1)
+    maps = {f"{x[node]},{y[node]}": node for node in range(V)}
 
-            result += distance
+    for node in range(V):
+        parent.append(f"{x[node]},{y[node]}")
+        rank.append(0)
 
-            ans.append((distance, point1, point2))
-            c += 1
+    e = 0
+    while e < V-1:
+        w, u, v = heappop(heap)
+        x = find(parent, u, maps)
+        y = find(parent, v, maps)
+
+        if x != y:
+            e += 1
+            result += w
+            union(parent, rank, x, y, maps)
 
     return result
 
 
 if __name__ == '__main__':
-    input = sys.stdin.read
+    #input = sys.stdin.read
     data = list(map(int, input().split()))
     n = data[0]
     x = data[1::2]
